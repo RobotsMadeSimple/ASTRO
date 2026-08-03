@@ -34,17 +34,21 @@ jobs:
             # Get all commits since last tag
             COMMITS=$(git log ${LATEST}..HEAD --pretty=format:"%s")
 
-            # Determine bump level
-            if echo "$COMMITS" | grep -qE '^(feat|fix|refactor|chore|docs|style|test|perf)(\(.+\))?!:' || echo "$COMMITS" | grep -q 'BREAKING CHANGE'; then
-              NEW_TAG="v$((MAJOR + 1)).0.0"
-            elif echo "$COMMITS" | grep -qE '^feat(\(.+\))?:'; then
-              NEW_TAG="v${MAJOR}.$((MINOR + 1)).0"
-            elif echo "$COMMITS" | grep -qE '^(fix|perf|refactor)(\(.+\))?:'; then
-              NEW_TAG="v${MAJOR}.${MINOR}.$((PATCH + 1))"
-            else
-              echo "No conventional commits found since $LATEST — skipping tag"
+            if [ -z "$COMMITS" ]; then
+              echo "No new commits since $LATEST — skipping tag"
               echo "skip=true" >> $GITHUB_OUTPUT
               exit 0
+            fi
+
+            # Determine bump level. Commit subjects may carry a leading emoji
+            # (e.g. "⚙️ chore(cad): ..."), so allow an optional token before the
+            # type. Anything that isn't a breaking change or feat is a patch.
+            if echo "$COMMITS" | grep -qE '^[^:]*!:' || echo "$COMMITS" | grep -q 'BREAKING CHANGE'; then
+              NEW_TAG="v$((MAJOR + 1)).0.0"
+            elif echo "$COMMITS" | grep -qE '^(\S+[[:space:]]+)?feat(\(.+\))?:'; then
+              NEW_TAG="v${MAJOR}.$((MINOR + 1)).0"
+            else
+              NEW_TAG="v${MAJOR}.${MINOR}.$((PATCH + 1))"
             fi
           fi
           echo "new_tag=$NEW_TAG" >> $GITHUB_OUTPUT
