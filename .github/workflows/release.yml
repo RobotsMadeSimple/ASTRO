@@ -40,6 +40,13 @@ jobs:
       - name: Zip STEP files
         run: zip -j "ASTRO-step-files-${TAG}.zip" CAD/*.step
 
+      # Unversioned copies so the website can link to
+      # releases/latest/download/<name>.zip and always get the newest files
+      - name: Add unversioned copies
+        run: |
+          cp "ASTRO-print-files-${TAG}.zip" ASTRO-print-files.zip
+          cp "ASTRO-step-files-${TAG}.zip" ASTRO-step-files.zip
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
@@ -48,4 +55,6 @@ jobs:
           files: |
             ASTRO-print-files-${{ env.TAG }}.zip
             ASTRO-step-files-${{ env.TAG }}.zip
+            ASTRO-print-files.zip
+            ASTRO-step-files.zip
           generate_release_notes: true
