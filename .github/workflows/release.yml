@@ -1,4 +1,4 @@
-name: Release Print Files
+name: Release Print and STEP Files
 
 on:
   push:
@@ -16,17 +16,36 @@ jobs:
     permissions:
       contents: write
 
+    env:
+      TAG: ${{ inputs.tag || github.ref_name }}
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
+      # Only pull the LFS files that go into the zips (skips the doc images)
+      - name: Pull LFS files
+        run: git lfs pull --include="print_files/**,CAD/*.step"
+
+      - name: Check no LFS pointers are left
+        run: |
+          if grep -rlI "^version https://git-lfs.github.com/spec/v1" print_files/ CAD/*.step; then
+            echo "::error::Files above are still LFS pointers"
+            exit 1
+          fi
+
       - name: Zip print files
-        run: zip -r ASTRO-print-files-${{ inputs.tag || github.ref_name }}.zip print_files/
+        run: zip -r "ASTRO-print-files-${TAG}.zip" print_files/
+
+      - name: Zip STEP files
+        run: zip -j "ASTRO-step-files-${TAG}.zip" CAD/*.step
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ inputs.tag || github.ref_name }}
-          name: ASTRO ${{ inputs.tag || github.ref_name }}
-          files: ASTRO-print-files-${{ inputs.tag || github.ref_name }}.zip
+          tag_name: ${{ env.TAG }}
+          name: ASTRO ${{ env.TAG }}
+          files: |
+            ASTRO-print-files-${{ env.TAG }}.zip
+            ASTRO-step-files-${{ env.TAG }}.zip
           generate_release_notes: true
