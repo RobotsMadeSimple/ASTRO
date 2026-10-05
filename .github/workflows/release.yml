@@ -34,18 +34,18 @@ jobs:
             exit 1
           fi
 
+      # Zip names stay fixed so the website can link to
+      # releases/latest/download/<name>.zip; VERSION.txt inside says which release it is
+      - name: Write VERSION.txt
+        run: echo "$TAG" > VERSION.txt
+
       - name: Zip print files
-        run: zip -r "ASTRO-print-files-${TAG}.zip" print_files/
+        run: |
+          zip -r ASTRO-print-files.zip print_files/
+          zip -j ASTRO-print-files.zip VERSION.txt
 
       - name: Zip STEP files
-        run: zip -j "ASTRO-step-files-${TAG}.zip" CAD/*.step
-
-      # Unversioned copies so the website can link to
-      # releases/latest/download/<name>.zip and always get the newest files
-      - name: Add unversioned copies
-        run: |
-          cp "ASTRO-print-files-${TAG}.zip" ASTRO-print-files.zip
-          cp "ASTRO-step-files-${TAG}.zip" ASTRO-step-files.zip
+        run: zip -j ASTRO-step-files.zip CAD/*.step VERSION.txt
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
@@ -53,8 +53,6 @@ jobs:
           tag_name: ${{ env.TAG }}
           name: ASTRO ${{ env.TAG }}
           files: |
-            ASTRO-print-files-${{ env.TAG }}.zip
-            ASTRO-step-files-${{ env.TAG }}.zip
             ASTRO-print-files.zip
             ASTRO-step-files.zip
           generate_release_notes: true
